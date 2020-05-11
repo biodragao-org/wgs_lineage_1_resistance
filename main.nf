@@ -38,10 +38,12 @@ process snippy {
 
     input:
     path refGbk from ch_refGbk
-    tuple (genomeInfo, path(read_1_gz), path(read_2_gz)) from ch_in_snippy
+    input:
+    set genomeName, file(genomeReads) from ch_in_snippy
 
     script:
-    genomeName = read_1_gz.name.split("\\.")[0].split("\\_")[0]
+    read_1_gz = genomeReads[0]
+    read_2_gz = genomeReads[1]
 
     """
     snippy --cpus 4 --outdir $genomeName --ref $refGbk --R1 $read_1_gz --R2 $read_2_gz
@@ -61,11 +63,14 @@ process snippy {
 process tbProfiler {
 
     container 'quay.io/biocontainers/tb-profiler:2.8.6--pypy_0'
+    publishDir 'results/tbProfiler_results'
 
     input:
-    tuple (genomeName, path(read_1_gz), path(read_2_gz)) from ch_in_tbProfiler
+    set genomeName, file(genomeReads) from ch_in_tbProfiler
 
     script:
+    read_1_gz = genomeReads[0]
+    read_2_gz = genomeReads[1]
 
     """
     tb-profiler profile -1 $read_1_gz -2 $read_2_gz  -t 4 -p $genomeName
@@ -81,10 +86,8 @@ process tbProfiler {
 */
 
 process gzip {
-//    echo true
-
-    publishDir 'results/gzip_results'
     container 'abhi18av/biodragao_base'
+    publishDir 'results/gzip_results'
 
     input:
     set genomeName, file(genomeReads) from ch_gzip
@@ -113,9 +116,7 @@ trimmomatic
 
 
 process runTrimmomatic {
-//    echo true
-// TODO add regexp to only publish the *paired* files
-    publishDir 'results/trimmomatic_results'
+    publishDir 'results/trimmomatic_results' // TODO add regexp to only publish the *paired* files
     container 'quay.io/biocontainers/trimmomatic:0.35--6'
 
 
@@ -153,8 +154,8 @@ process runTrimmomatic {
 */
 
 process fastqc {
-    publishDir 'results/fastqc_results'
     container 'quay.io/biocontainers/fastqc:0.11.9--0'
+    publishDir 'results/fastqc_results'
 
     input:
     tuple  genomeName, path(fq_1_paired), path(fq_2_paired) from ch_in_fastqc
@@ -188,8 +189,11 @@ process spades {
     input:
     tuple genomeName, path(fq_1), path(fq_2) from ch_in_spades
 
-    script:
+    output:
+    path """${genomeName}_spades/scaffolds.fasta""" into ch_in_prokka
 
+
+    script:
 
     """
     spades.py -k 21,33,55,77 --careful --only-assembler --pe1-1 ${fq_1} --pe1-2 ${fq_2} -o ${genomeName}_spades -t 2
@@ -215,7 +219,7 @@ process prokka {
     genomeName = bestContig.getName().split("\\_")[0]
     contigName = bestContig + "_NC000962_3.fasta.fasta"
 
-#prokka --outdir 23_prokka --prefix 23 23_scaffolds.fasta
+//prokka --outdir 23_prokka --prefix 23 23_scaffolds.fasta
     """
     prokka --outdir ./${genomeName}_prokka --prefix $genomeName $contigName
     """
