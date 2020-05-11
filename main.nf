@@ -115,7 +115,7 @@ trimmomatic
 */
 
 
-process runTrimmomatic {
+process trimmomatic {
     publishDir 'results/trimmomatic_results' // TODO add regexp to only publish the *paired* files
     container 'quay.io/biocontainers/trimmomatic:0.35--6'
 
@@ -224,3 +224,47 @@ process prokka {
     prokka --outdir ./${genomeName}_prokka --prefix $genomeName $contigName
     """
 }
+
+
+
+/*
+#==============================================
+# mtbseq
+quay.io/biocontainers/mtbseq:1.0.4--pl526_0
+#==============================================
+*/
+
+/*
+// in a folder with all fqgz files
+MTBseq --step TBfull 
+*/
+
+
+/*
+#==============================================
+# TODO mykrobe
+quay.io/biocontainers/mykrobe:0.8.1--py37ha80c686_0
+#==============================================
+*/
+
+/*
+mykrobe predict G04868 tb --output G04868_mykrobe.csv --seq G04868_MTBSeq_nextseq_151bp_R1.fastq.gz G04868_MTBSeq_nextseq_151bp_R2.fastq.gz
+
+*/
+
+
+/*
+#==============================================
+# TODO quast
+# quay.io/biocontainers/quast:5.0.2--1
+#==============================================
+*/
+
+/*
+   cp ../spades_results/work/ae/4d2677d866d9030d613d882de8b639/210_spades/scaffolds.fasta 210_scaffolds.fasta
+ 
+   cp ../spades_results/work/b0/a4240ada1affe5b4217da78f21bc8f/23_spades/scaffolds.fasta 23_scaffolds.fasta
+
+quast.py 23_scaffolds.fasta 210_scaffolds.fasta
+
+*/
